@@ -10,3 +10,5 @@ Code voor assignment 2. Je kent 't wel
 - Hier doe ik excel uploaden
 - Export ik ze naar csv
 - Kan je zien in Exports als je wil weten hoe cooked de data is die we gekregen hebt
+
+## In Data map heb ik ook de preprocessed Excel gezet voor de liefhebbers
