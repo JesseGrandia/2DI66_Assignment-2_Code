@@ -12,3 +12,11 @@ Code voor assignment 2. Je kent 't wel
 - Kan je zien in Exports als je wil weten hoe cooked de data is die we gekregen hebt
 
 ## In Data map heb ik ook de preprocessed Excel gezet voor de liefhebbers
+
+# Toegevoegd voor Simulation 
+Vrij zeker dat ze willen dat we deze classes gebruiken in de sim
+[] FES.py
+[] customer.py
+[] event.py
+
+Heb ze zo gwn direct gekopieerd van canvas 
