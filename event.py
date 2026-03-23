@@ -3,9 +3,10 @@ class Event:
     ARRIVAL = 0     # constant for arrival type
     DEPARTURE = 1   # constant for departure type
     
-    def __init__(self, typ, time):  # type is a reserved word
+    def __init__(self, typ, time, customer):  # type is a reserved word
         self.type = typ
         self.time = time
+        self.customer = customer
         
     def __lt__(self, other):        # compare to other events 
         return self.time < other.time

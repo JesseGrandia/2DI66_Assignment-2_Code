@@ -1,24 +1,3 @@
-"""
-config.py
----------
-Hard-coded simulation parameters for the Lodewijkstraat WRP.
-
-Source: Data_Lodewijkstraat.xlsx (2012 data, collected on-site)
-  - Sheet 1: Arrival and service processes
-  - Sheet 2: Customer classes and routing
-
-IMPORTANT: Routing matrices reflect the RAW 2012 data. Under the 2012
-rules, customers were allowed to visit both Hall/Overflow and Green in
-the same visit. This is no longer permitted under 2026 routing rules.
-Illegal Hall/Overflow -> Green transitions are marked with # ILLEGAL
-and must be corrected before use in the simulation. Use RouteFixer from
-route_fixer.py to produce corrected matrices.
-
-Routing matrix layout (5 x 5):
-  Rows (FROM): 0=Entrance, 1=Hall/Overflow, 2=DcDd, 3=Green, 4=Rest
-  Cols (TO):   0=Hall/Overflow, 1=DcDd, 2=Green, 3=Rest, 4=Exit
-"""
-
 import numpy as np
 from dataclasses import dataclass
 
@@ -40,7 +19,7 @@ class StationParams:
 class CustomerClass:
     name:           str
     fraction:       float
-    routing_matrix: np.ndarray   # 5 x 5, see module docstring for layout
+    routing_matrix: np.ndarray   
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +75,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris',
         fraction = 0.1010,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.130000, 0.000000, 0.000000, 0.870000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -109,7 +88,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris, Rest 1',
         fraction = 0.0674,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.260000, 0.000000, 0.100000, 0.640000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -122,7 +101,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris, Rest 2',
         fraction = 0.0589,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.370000, 0.000000, 0.060000, 0.570000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -135,7 +114,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris, Rest 3',
         fraction = 0.0337,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.200000, 0.000000, 0.400000, 0.400000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 1.000000, 0.000000],  # FROM DcDd
@@ -148,7 +127,7 @@ CUSTOMER_CLASSES = [
         name     = 'Debris, Green, Rest',
         fraction = 0.1853,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [0.000000, 0.160000, 0.370000, 0.470000, 0.000000],  # FROM Entrance
             [0.000000, 0.220000, 0.000000, 0.000000, 0.780000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -161,7 +140,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris, Rest 4',
         fraction = 0.1853,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.220000, 0.000000, 0.060000, 0.720000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -174,7 +153,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris, Rest 1',
         fraction = 0.0253,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.170000, 0.000000, 0.330000, 0.500000],  # FROM Hall/Ovfl
             [0.000000, 0.000000, 0.000000, 0.400000, 0.600000],  # FROM DcDd
@@ -187,7 +166,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris 1',
         fraction = 0.0337,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [0.820000, 0.180000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 1.000000, 0.000000, 0.000000, 0.000000],  # FROM Hall/Ovfl
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -198,9 +177,9 @@ CUSTOMER_CLASSES = [
 
     CustomerClass(
         name     = 'Hall, Debris, Rest 2',
-        fraction = 0.084,
+        fraction = 0.0084,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 1.000000, 0.000000, 0.000000, 0.000000],  # FROM Hall/Ovfl
             [0.000000, 0.000000, 0.000000, 0.500000, 0.500000],  # FROM DcDd
@@ -213,7 +192,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Debris 2',
         fraction = 0.1010,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [1.000000, 0.000000, 0.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.150000, 0.000000, 0.000000, 0.850000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -226,7 +205,7 @@ CUSTOMER_CLASSES = [
         name     = 'Hall, Green, Rest',
         fraction = 0.0421,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [0.150000, 0.000000, 0.850000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
@@ -238,7 +217,7 @@ CUSTOMER_CLASSES = [
         name     = 'Green, Rest',
         fraction = 0.1579,
         routing_matrix = np.array([
-            # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
+      # TO:  Hall/Ovfl   DcDd      Green     Rest      Exit
             [0.000000, 0.000000, 1.000000, 0.000000, 0.000000],  # FROM Entrance
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM Hall/Ovfl  # ILLEGAL: Hall->Green
             [0.000000, 0.000000, 0.000000, 0.000000, 1.000000],  # FROM DcDd
