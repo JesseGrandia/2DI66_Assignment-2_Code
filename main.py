@@ -3,7 +3,6 @@ import numpy as np
 
 from simulation import WRPSimulation
 
-
 def confidence_interval(values, z=1.96):
     """
     Compute sample mean and 95% confidence interval half-width.

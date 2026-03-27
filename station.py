@@ -1,6 +1,5 @@
 from collections import deque
 import math
-import random
 
 
 class Station:
@@ -8,12 +7,11 @@ class Station:
         self.name = name
         self.mean_service = mean_service
         self.std_service = std_service
-        self.capacity = capacity                  # in small-car equivalents
-        self.max_queue = max_queue                # queue limit in small-car equivalents
+        self.capacity = capacity
+        self.max_queue = max_queue
 
         self.waiting = deque()
         self.in_service = []
-
         self.busy_space = 0
 
         # time-average statistics
@@ -27,11 +25,6 @@ class Station:
         self.nr_arrivals = 0
 
     def _required_capacity(self, customer):
-        """
-        Entrance is a single checking server:
-        one customer at a time, regardless of vehicle size.
-        Everywhere else, capacity is in small-car equivalents.
-        """
         if self.name == "Entrance":
             return 1
         return customer.spots_needed
@@ -55,6 +48,10 @@ class Station:
     def can_start_customer(self, customer):
         return self.free_space() >= self._required_capacity(customer)
 
+    def can_join_waiting_queue(self, customer):
+        required = self._required_capacity(customer)
+        return self.queue_length_sce() + required <= self.max_queue
+
     def add_to_queue(self, customer, t):
         self.nr_arrivals += 1
         customer.queue_arrival_times[self.name] = t
@@ -68,7 +65,7 @@ class Station:
             return self.waiting.popleft()
         return None
 
-    def start_service(self, customer, t, rng):
+    def start_service(self, customer, t, service_time):
         self.busy_space += self._required_capacity(customer)
         self.in_service.append(customer)
 
@@ -77,7 +74,6 @@ class Station:
         self.waiting_times.append(wait)
         customer.service_start_times[self.name] = t
 
-        service_time = self.sample_service_time(rng)
         self.service_times.append(service_time)
         customer.current_station = self.name
         return service_time
@@ -88,6 +84,8 @@ class Station:
         customer.departure_times[self.name] = t
         customer.current_station = None
 
-    def sample_service_time(self, rng):
-        x = rng.normalvariate(self.mean_service, self.std_service)
+    def sample_service_time(self, rng, mean_service=None, std_service=None):
+        mean = self.mean_service if mean_service is None else mean_service
+        std = self.std_service if std_service is None else std_service
+        x = rng.normalvariate(mean, std)
         return max(1.0, x)
