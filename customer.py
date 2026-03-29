@@ -7,8 +7,6 @@ class Customer:
         self.cust_class = cust_class
         self.customer_type = customer_type  # "A" or "B"
 
-        # Route uses config state names:
-        # "HallOvfl", "DcDd", "Green", "Rest"
         self.route = route
         self.route_index = -1
 
@@ -23,13 +21,13 @@ class Customer:
     def current_route_state(self):
         if 0 <= self.route_index < len(self.route):
             return self.route[self.route_index]
-        return None
+        return "Exit"
 
     def peek_next_route_state(self):
         idx = self.route_index + 1
         if 0 <= idx < len(self.route):
             return self.route[idx]
-        return None
+        return "Exit"
 
     def advance_to_next_route_state(self):
         self.route_index += 1

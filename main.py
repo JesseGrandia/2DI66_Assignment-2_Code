@@ -10,13 +10,7 @@ def confidence_interval(values, z=1.96):
     arr = np.asarray(values, dtype=float)
     n = len(arr)
 
-    if n == 0:
-        return np.nan, np.nan
-
     mean = np.mean(arr)
-
-    if n == 1:
-        return mean, 0.0
 
     std = np.std(arr, ddof=1)
     half_width = z * std / np.sqrt(n)
@@ -26,7 +20,6 @@ def confidence_interval(values, z=1.96):
 def run_replications(n_replications=30, arrival_multiplier=1.0, show_progress=True):
     """
     Run multiple independent replications of the WRP simulation.
-    tqdm is only used here, over the replication loop.
     """
     system_times = []
     entrance_waits = []

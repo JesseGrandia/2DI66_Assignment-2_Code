@@ -37,7 +37,6 @@ class WRPSimulation:
         self.customer_id = 0
         self.total_customers = 0
 
-        # Actual stations
         self.stations = {
             "Entrance": Station(
                 "Entrance",
@@ -46,8 +45,6 @@ class WRPSimulation:
                 STATIONS["Entrance"].parking_spaces,
                 STATIONS["Entrance"].max_queue,
             ),
-            # Hall queue is modeled explicitly in front of the hall.
-            # Therefore Hall itself has no internal waiting queue.
             "Hall": Station(
                 "Hall",
                 STATIONS["Hall Small Cars"].mean_service,
@@ -83,24 +80,23 @@ class WRPSimulation:
                 STATIONS["Rest"].parking_spaces,
                 STATIONS["Rest"].max_queue,
             ),
+            "HallFront": Station(
+                "HallFront",
+                mean_service=0.0,
+                std_service=0.0,
+                capacity=0,
+                max_queue=STATIONS["Hall Small Cars"].max_queue,
+            ),
         }
 
         # Customers that finished service but cannot move yet.
         self.blocked_after_service = {name: deque() for name in self.stations}
 
-        # Explicit hall-front queue.
-        self.hall_front_queue = deque()
-        self.hall_front_max_queue = STATIONS["Hall Small Cars"].max_queue
-        self.hall_front_area_queue = 0.0
-        self.hall_front_last_event_time = OPEN_TIME
-        self.hall_front_waits = []
-        self.hall_front_arrivals = 0
-
         self.completed_system_times = []
         self.entrance_queue_blocked_time = 0.0
 
     # ------------------------------------------------------------------
-    # Main public method
+    # Main method
     # ------------------------------------------------------------------
 
     def run(self):
@@ -124,8 +120,6 @@ class WRPSimulation:
                 self.handle_arrival(e)
             elif e.type == Event.DEPARTURE:
                 self.handle_departure(e)
-            else:
-                raise ValueError("Unknown event type.")
 
         return self.collect_results()
 
@@ -134,9 +128,6 @@ class WRPSimulation:
     # ------------------------------------------------------------------
 
     def advance_time(self, new_t):
-        if new_t < self.t:
-            raise ValueError("Event time moved backwards.")
-
         dt = new_t - self.t
 
         if self.is_road_blocked():
@@ -144,9 +135,6 @@ class WRPSimulation:
 
         for station in self.stations.values():
             station.update_time_stats(new_t)
-
-        self.hall_front_area_queue += dt * self.hall_front_queue_length_sce()
-        self.hall_front_last_event_time = new_t
 
         self.t = new_t
 
@@ -159,7 +147,7 @@ class WRPSimulation:
         return self.entrance_vehicles_waiting_for_access() > 4
 
     def hall_front_queue_length_sce(self):
-        return sum(c.spots_needed for c in self.hall_front_queue)
+        return self.stations["HallFront"].queue_length_sce()
 
     # ------------------------------------------------------------------
     # External arrivals
@@ -283,7 +271,7 @@ class WRPSimulation:
         customer = event.customer
         origin = event.station
 
-        moved = self.try_release_customer_from_origin(customer, origin, from_blocked=False)
+        moved = self.try_move_customer(customer, origin, from_blocked=False)
         if not moved:
             self.block_customer_at_origin(customer, origin)
 
@@ -339,22 +327,22 @@ class WRPSimulation:
         return None
 
     def enqueue_hall_front(self, customer):
-        customer.queue_arrival_times["HallFront"] = self.t
-        self.hall_front_queue.append(customer)
-        self.hall_front_arrivals += 1
+        self.stations["HallFront"].add_to_queue(customer, self.t)
 
     def can_join_hall_front(self, customer):
-        return self.hall_front_queue_length_sce() + customer.spots_needed <= self.hall_front_max_queue
+        return self.stations["HallFront"].can_join_waiting_queue(customer)
 
     def try_release_hall_front(self):
         progress = False
+        hf_station = self.stations["HallFront"]
 
-        while self.hall_front_queue:
-            customer = self.hall_front_queue[0]
+        while hf_station.waiting:
+            customer = hf_station.waiting[0]
+            
             next_state = customer.peek_next_route_state()
 
-            if next_state is None:
-                self.hall_front_queue.popleft()
+            if next_state == "Exit":
+                hf_station.waiting.popleft()
                 customer.finished = True
                 self.completed_system_times.append(self.t - customer.arrivalTime)
                 progress = True
@@ -369,18 +357,18 @@ class WRPSimulation:
                 if not self.can_enter_station_immediately(customer, target_station):
                     break
 
-            self.hall_front_queue.popleft()
+            hf_station.waiting.popleft()
 
+            # Record their wait time directly into the Station object
             wait = self.t - customer.queue_arrival_times["HallFront"]
-            self.hall_front_waits.append(wait)
+            hf_station.waiting_times.append(wait)
 
             customer.advance_to_next_route_state()
-
             self.start_customer_at_station(customer, target_station)
             progress = True
 
         return progress
-
+    
     # ------------------------------------------------------------------
     # Movement / blocking logic
     # ------------------------------------------------------------------
@@ -391,9 +379,6 @@ class WRPSimulation:
 
     def start_customer_at_station(self, customer, station_name):
         station = self.stations[station_name]
-
-        if station.max_queue == 0 and not station.can_start_customer(customer):
-            raise ValueError(f"Customer cannot enter {station_name}; no immediate capacity.")
 
         station.nr_arrivals += 1
         customer.queue_arrival_times[station_name] = self.t
@@ -430,68 +415,44 @@ class WRPSimulation:
             self.blocked_after_service[origin].remove(customer)
         customer.blocked_after_service = False
 
-    def try_release_customer_from_origin(self, customer, origin, from_blocked):
+    def try_move_customer(self, customer, origin, from_blocked=False):
         """
-        Try to move a customer away from its current occupied origin.
-        The origin spot is only released if the next move is feasible.
+        Attempts to move a customer away from their current occupied origin.
+        The origin spot is only released if the next move is legally feasible.
         """
-        if origin == "Entrance":
-            return self.try_release_from_entrance(customer, from_blocked)
-
-        return self.try_release_from_regular_station(customer, origin, from_blocked)
-
-    def try_release_from_entrance(self, customer, from_blocked):
-        if customer.customer_type == "A":
-            next_state = customer.peek_next_route_state()
-
-            if next_state is None:
-                # Should not really happen, but handle safely.
-                self.finalize_departure_from_origin(customer, "Entrance", from_blocked)
-                customer.finished = True
-                self.completed_system_times.append(self.t - customer.arrivalTime)
-                return True
-
-            target_station = next_state
-            if not self.can_enter_station_immediately(customer, target_station):
-                return False
-
-            self.finalize_departure_from_origin(customer, "Entrance", from_blocked)
-            customer.advance_to_next_route_state()
-            self.start_customer_at_station(customer, target_station)
-            return True
-
-        # Type B always needs to go through the hall-front queue.
-        if not self.can_join_hall_front(customer):
-            return False
-
-        self.finalize_departure_from_origin(customer, "Entrance", from_blocked)
-        self.enqueue_hall_front(customer)
-        self.try_release_hall_front()
-        return True
-
-    def try_release_from_regular_station(self, customer, origin, from_blocked):
         next_state = customer.peek_next_route_state()
 
-        if next_state is None:
+        if next_state == "Exit":
             self.finalize_departure_from_origin(customer, origin, from_blocked)
             customer.finished = True
             self.completed_system_times.append(self.t - customer.arrivalTime)
             return True
 
+        if origin == "Entrance" and next_state == "HallOvfl":
+            if not self.can_join_hall_front(customer):
+                return False  # Blocked at the entrance gate
+                
+            self.finalize_departure_from_origin(customer, origin, from_blocked)
+            self.enqueue_hall_front(customer)
+            self.try_release_hall_front()
+            return True
+
+        # Resolve exactly which station they need parking for
         if next_state == "HallOvfl":
             target_station = self.choose_b_side_station(customer)
-            if target_station is None:
-                return False
         else:
             target_station = next_state
-            if not self.can_enter_station_immediately(customer, target_station):
-                return False
+
+        # Check if they are allowed to enter
+        if target_station is None or not self.can_enter_station_immediately(customer, target_station):
+            return False  # Blocked, stay at current origin
 
         self.finalize_departure_from_origin(customer, origin, from_blocked)
         customer.advance_to_next_route_state()
         self.start_customer_at_station(customer, target_station)
         return True
 
+    
     def finalize_departure_from_origin(self, customer, origin, from_blocked):
         station = self.stations[origin]
 
@@ -509,7 +470,7 @@ class WRPSimulation:
         while self.blocked_after_service[origin]:
             customer = self.blocked_after_service[origin][0]
 
-            moved = self.try_release_customer_from_origin(customer, origin, from_blocked=True)
+            moved = self.try_move_customer(customer, origin, from_blocked=True)
             if not moved:
                 break
 
@@ -565,12 +526,5 @@ class WRPSimulation:
             res.station_mean_occupancy[name] = st.area_occupancy / horizon
             res.station_mean_wait[name] = float(np.mean(st.waiting_times)) if st.waiting_times else 0.0
             res.station_nr_arrivals[name] = st.nr_arrivals
-
-        # Add explicit hall-front statistics.
-        hall_front_horizon = max(self.hall_front_last_event_time - OPEN_TIME, 1e-12)
-        res.station_mean_queue["HallFront"] = self.hall_front_area_queue / hall_front_horizon
-        res.station_mean_occupancy["HallFront"] = 0.0
-        res.station_mean_wait["HallFront"] = float(np.mean(self.hall_front_waits)) if self.hall_front_waits else 0.0
-        res.station_nr_arrivals["HallFront"] = self.hall_front_arrivals
 
         return res

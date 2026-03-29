@@ -31,8 +31,6 @@ class Station:
 
     def update_time_stats(self, t):
         dt = t - self.last_event_time
-        if dt < 0:
-            raise ValueError("Negative time step encountered.")
         self.area_queue += dt * self.queue_length_sce()
         self.area_occupancy += dt * self.busy_space
         self.last_event_time = t
