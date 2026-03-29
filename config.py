@@ -57,6 +57,8 @@ ARRIVALS = [
 
 STATIONS = {
     'Entrance':        StationParams('Entrance',        mean_service=30,  std_service=12,  parking_spaces=1,  max_queue=np.inf),
+    # CODE FOR TWO ENTRANCES
+    # 'Entrance':        StationParams('Entrance',        mean_service=30,  std_service=12,  parking_spaces=2,  max_queue=np.inf), 
     'Hall Big Cars':   StationParams('Hall Big Cars',   mean_service=423, std_service=270, parking_spaces=6,  max_queue=7),
     'Hall Small Cars': StationParams('Hall Small Cars', mean_service=240, std_service=150, parking_spaces=12, max_queue=14),
     'Overflow':        StationParams('Overflow',        mean_service=180, std_service=150, parking_spaces=10, max_queue=0),

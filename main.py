@@ -25,6 +25,11 @@ def run_replications(n_replications=30, arrival_multiplier=1.0, show_progress=Tr
     entrance_waits = []
     blocked_fractions = []
 
+    station_mean_queue = {}
+    station_mean_occupancy = {}
+    station_mean_wait = {}
+    station_nr_arrivals = {}
+
     iterator = range(n_replications)
     if show_progress:
         iterator = tqdm(
@@ -44,14 +49,46 @@ def run_replications(n_replications=30, arrival_multiplier=1.0, show_progress=Tr
         entrance_waits.append(results.mean_entrance_wait)
         blocked_fractions.append(results.fraction_road_blocked)
 
+        for station, value in results.station_mean_queue.items():
+            station_mean_queue.setdefault(station, []).append(value)
+
+        for station, value in results.station_mean_occupancy.items():
+            station_mean_occupancy.setdefault(station, []).append(value)
+
+        for station, value in results.station_mean_wait.items():
+            station_mean_wait.setdefault(station, []).append(value)
+
+        for station, value in results.station_nr_arrivals.items():
+            station_nr_arrivals.setdefault(station, []).append(value)
+
     summary = {
         "mean_system_time": confidence_interval(system_times),
         "mean_entrance_wait": confidence_interval(entrance_waits),
         "fraction_road_blocked": confidence_interval(blocked_fractions),
+        "station_mean_queue": {
+            station: confidence_interval(values)
+            for station, values in station_mean_queue.items()
+        },
+        "station_mean_occupancy": {
+            station: confidence_interval(values)
+            for station, values in station_mean_occupancy.items()
+        },
+        "station_mean_wait": {
+            station: confidence_interval(values)
+            for station, values in station_mean_wait.items()
+        },
+        "station_nr_arrivals": {
+            station: confidence_interval(values)
+            for station, values in station_nr_arrivals.items()
+        },
         "raw": {
             "system_times": system_times,
             "entrance_waits": entrance_waits,
             "blocked_fractions": blocked_fractions,
+            "station_mean_queue": station_mean_queue,
+            "station_mean_occupancy": station_mean_occupancy,
+            "station_mean_wait": station_mean_wait,
+            "station_nr_arrivals": station_nr_arrivals,
         },
     }
 
@@ -72,6 +109,21 @@ def print_summary(title, summary):
     print(f"Mean entrance waiting : {mew_mean:.2f} ± {mew_hw:.2f} sec")
     print(f"Road blocked fraction : {blk_mean:.4f} ± {blk_hw:.4f}")
 
+    print("\nStation mean queue")
+    for station, (mean, hw) in summary["station_mean_queue"].items():
+        print(f"  {station}: {mean:.2f} ± {hw:.2f}")
+
+    print("\nStation mean occupancy")
+    for station, (mean, hw) in summary["station_mean_occupancy"].items():
+        print(f"  {station}: {mean:.2f} ± {hw:.2f}")
+
+    print("\nStation mean wait")
+    for station, (mean, hw) in summary["station_mean_wait"].items():
+        print(f"  {station}: {mean:.2f} ± {hw:.2f} sec")
+
+    print("\nStation arrivals")
+    for station, (mean, hw) in summary["station_nr_arrivals"].items():
+        print(f"  {station}: {mean:.2f} ± {hw:.2f}")
 
 def main():
     n_replications = 300
